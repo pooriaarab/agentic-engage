@@ -12,11 +12,6 @@
     "typescript",
     "cli",
     "mcp",
-    "reddit",
-    "x-twitter",
-    "linkedin",
-    "youtube",
-    "bluesky",
     "audit-log"
   ],
   "license": "MIT",
