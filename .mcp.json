@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "agentic-engage": {
+      "command": "npx",
+      "args": ["-y", "agentic-engage", "mcp"]
+    }
+  }
+}

@@ -1,0 +1,15 @@
+# agentic-engage
+
+Plan and send approved engagement on social platforms.
+
+Keywords: social,engagement,comments,agentic-suite,cli,mcp.
+
+- SDK: import { summarizeText, dispatchText } from "agentic-engage".
+- CLI: agentic-engage summary --text "...".
+- MCP: run agentic-engage mcp, then call summarize_text.
+
+## Docs
+
+- README: https://github.com/pooriaarab/agentic-engage
+- Core contract: https://github.com/pooriaarab/agentic-engage/blob/main/docs/agentic-core.md
+- License: MIT
