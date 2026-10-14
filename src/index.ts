@@ -1,47 +1,6 @@
 export { VERSION } from "./version.js";
-export {
-  defineBrand,
-  createLogger,
-  GuardError,
-  VendorError,
-  createGuards,
-  LocalRouterAdapter,
-  HttpRouterAdapter,
-  recordCost,
-  getCostReport,
-  resetCosts,
-  createDryRunResult,
-  dispatchText,
-  summarizeText,
-} from "./core.js";
-export type {
-  BrandConfig,
-  LogLevel,
-  Logger,
-  LoggerOptions,
-  CapsConfig,
-  QuietHoursConfig,
-  GuardsConfig,
-  Guards,
-  DispatchReceipt,
-  RouterAdapter,
-  HttpRouterOptions,
-  CostEntry,
-  CostReport,
-  DispatchOptions,
-  DispatchResult,
-  TopWord,
-  TextSummary,
-  SummarizeOptions,
-} from "./core.js";
-
+export * from "./core.js";
+export * from "./engagement.js";
 import { defineBrand, type BrandConfig } from "./core.js";
 import { VERSION } from "./version.js";
-
-export const DEFAULT_BRAND: BrandConfig = defineBrand({
-  name: "Agentic pack",
-  command: "agentic-pack",
-  description: "Plan and send approved engagement on social platforms.",
-  keywords: ["cli", "mcp", "scaffold", "starter", "typescript"],
-  version: VERSION,
-});
+export const DEFAULT_BRAND: BrandConfig = defineBrand({ name: "Agentic Engage", command: "agentic-engage", description: "Plan and send approved engagement on own brand accounts.", keywords: ["social", "engagement", "comments", "agentic-suite", "cli", "mcp"], version: VERSION });

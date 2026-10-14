@@ -1,105 +1,16 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import {
-  createLogger,
-  dispatchText,
-  getCostReport,
-  GuardError,
-  LocalRouterAdapter,
-  summarizeText,
-  VendorError,
-  type Guards,
-  type Logger,
-  type RouterAdapter,
-} from "./core.js";
+import { getCostReport } from "./core.js";
+import { approveEngagement, createEngagementQueue, denyEngagement, executeEngagement, getEngagementQueue, planEngagement, type EngagementQueue } from "./engagement.js";
 import { DEFAULT_BRAND } from "./index.js";
-
-export interface McpDeps {
-  router?: RouterAdapter;
-  guards?: Guards;
-  logger?: Logger;
-}
-
-const textShape = {
-  text: z.string().describe("The text to handle."),
-};
-
-function errorResult(error: unknown): {
-  content: { type: "text"; text: string }[];
-  isError: true;
-} {
-  const message = error instanceof Error ? error.message : String(error);
-  return { content: [{ type: "text", text: JSON.stringify({ error: message }) }], isError: true };
-}
-
-function okResult(value: unknown): {
-  content: { type: "text"; text: string }[];
-} {
-  return { content: [{ type: "text", text: JSON.stringify(value) }] };
-}
-
-export function createMcpServer(deps: McpDeps = {}): McpServer {
-  const router = deps.router ?? new LocalRouterAdapter();
-  const guards = deps.guards;
-  const logger = deps.logger ?? createLogger({ quiet: true });
-  const server = new McpServer({
-    name: DEFAULT_BRAND.command,
-    version: DEFAULT_BRAND.version,
-  });
-
-  server.registerTool(
-    "summarize_text",
-    {
-      description: "Count chars, words, and lines in a text, with top words.",
-      inputSchema: textShape,
-      annotations: { readOnlyHint: true },
-    },
-    async ({ text }) => okResult(summarizeText(text)),
-  );
-
-  server.registerTool(
-    "dispatch_text",
-    {
-      description: "Route one text through the pack router. Pass dryRun to preview only.",
-      inputSchema: {
-        ...textShape,
-        dryRun: z.boolean().optional().describe("Preview the route without delivery."),
-      },
-      annotations: {
-        readOnlyHint: false,
-        destructiveHint: false,
-        idempotentHint: false,
-        openWorldHint: false,
-      },
-    },
-    async ({ text, dryRun }) => {
-      try {
-        return okResult(await dispatchText(text, { adapter: router, guards, logger, dryRun: dryRun ?? false }));
-      } catch (error) {
-        if (error instanceof GuardError || error instanceof VendorError) {
-          return errorResult(error);
-        }
-        throw error;
-      }
-    },
-  );
-
-  server.registerTool(
-    "get_cost_report",
-    {
-      description: "Read the cost report for this session.",
-      inputSchema: {},
-      annotations: { readOnlyHint: true },
-    },
-    async () => okResult(getCostReport()),
-  );
-
-  return server;
-}
-
-export async function startMcp(deps: McpDeps = {}): Promise<void> {
-  const server = createMcpServer(deps);
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
-}
+const result = (value: unknown) => ({ content: [{ type: "text" as const, text: JSON.stringify(value) }] });
+export interface McpDeps { queue?: EngagementQueue }
+export function createMcpServer(deps: McpDeps = {}): McpServer { const queue = deps.queue ?? createEngagementQueue(); const s = new McpServer({ name: DEFAULT_BRAND.command, version: DEFAULT_BRAND.version });
+ s.registerTool("plan_engagement", { description: "Create AI-disclosed draft engagement actions for own brand accounts.", inputSchema: { targets: z.array(z.object({ id:z.string(), platform:z.enum(["reddit","x","linkedin","youtube","bluesky","webhook"]), url:z.string().optional(), context:z.string().optional(), account:z.string().optional() })), personaVoice:z.string() } }, async ({targets,personaVoice}) => result(planEngagement(targets, personaVoice, queue)));
+ s.registerTool("get_engagement_queue", { description:"List queued engagement actions.", inputSchema:{}, annotations:{readOnlyHint:true} }, async()=>result({actions:getEngagementQueue(queue),audit:queue.audit}));
+ s.registerTool("approve_engagement", { description:"Approve a draft before it can be sent.", inputSchema:{actionId:z.string()} }, async ({actionId})=> { try{return result(approveEngagement(actionId,queue));}catch(e){return result({error:String(e)})} });
+ s.registerTool("deny_engagement", { description:"Deny a draft action.", inputSchema:{actionId:z.string()} }, async ({actionId})=> { try{return result(denyEngagement(actionId,queue));}catch(e){return result({error:String(e)})} });
+ s.registerTool("execute_engagement", { description:"Preview an approved action by default; live=true sends it.", inputSchema:{actionId:z.string(),live:z.boolean().optional()} }, async ({actionId,live})=> { try{return result(await executeEngagement(actionId,{queue,live:live??false}));}catch(e){return result({error:String(e)})} });
+ s.registerTool("get_cost_report", { description:"Read session costs.",inputSchema:{},annotations:{readOnlyHint:true}},async()=>result(getCostReport())); return s; }
+export async function startMcp(deps: McpDeps = {}): Promise<void> { const s=createMcpServer(deps); await s.connect(new StdioServerTransport()); }
