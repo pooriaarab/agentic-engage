@@ -1,6 +1,6 @@
 {
   "name": "agentic-engage",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Create and approve engagement drafts with an in-memory Node.js queue, generic HTTP webhook adapter, CLI, and MCP tools.",
   "keywords": [
     "engagement",
